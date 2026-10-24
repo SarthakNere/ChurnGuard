@@ -1,0 +1,6 @@
+Flask
+groq
+joblib
+pandas
+python-dotenv
+scikit-learn

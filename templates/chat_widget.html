@@ -1,0 +1,297 @@
+
+<style>
+    #chat-launcher {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 1000;
+        border: 0;
+        border-radius: 50px;
+        padding: 14px 19px;
+        background: linear-gradient(135deg, #426cf5, #3154df);
+        color: white;
+        font-weight: 700;
+        box-shadow: 0 10px 28px #14264b45;
+        cursor: pointer;
+        transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    #chat-launcher:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 13px 30px #14264b50;
+    }
+
+    #chat-panel {
+        position: fixed;
+        right: 24px;
+        bottom: 88px;
+        width: min(370px, calc(100vw - 32px));
+        height: min(520px, calc(100vh - 125px));
+        z-index: 1001;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        background: white;
+        border: 1px solid #e1e8f2;
+        border-radius: 20px;
+        box-shadow: 0 22px 60px #14264b38;
+        font-family: Arial, sans-serif;
+    }
+
+    #chat-panel.open {
+        display: flex;
+    }
+
+    .chat-header {
+        background: linear-gradient(125deg, #101b33, #24478e);
+        color: white;
+        padding: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chat-header small {
+        display: block;
+        color: #c6d4ed;
+        margin-top: 4px;
+    }
+
+    #chat-close {
+        border: 0;
+        color: white;
+        background: transparent;
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    #chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px;
+        background: #f5f7fb;
+    }
+
+    .chat-message {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        max-width: 88%;
+        padding: 11px 13px;
+        border-radius: 13px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .chat-bot {
+        background: white;
+        border: 1px solid #e0e6ef;
+        color: #172033;
+    }
+
+    .chat-user {
+        background: linear-gradient(135deg, #426cf5, #3154df);
+        color: white;
+        margin-left: auto;
+    }
+
+    .chat-shortcuts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 10px 12px 0;
+        background: white;
+    }
+
+    .chat-shortcuts button {
+        border: 1px solid #d8e2f3;
+        border-radius: 20px;
+        background: white;
+        color: #24457f;
+        padding: 6px 9px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .chat-shortcuts button:hover {
+        border-color: #aebff5;
+        background: #f4f6ff;
+    }
+
+    #chat-form {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        background: white;
+        border-top: 1px solid #e5eaf2;
+    }
+
+    #chat-input {
+        min-width: 0;
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #d6deea;
+        border-radius: 9px;
+    }
+
+    #chat-send {
+        border: 0;
+        border-radius: 9px;
+        padding: 0 14px;
+        background: linear-gradient(135deg, #426cf5, #3154df);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #chat-input:focus {
+        border-color: #7592f5;
+        outline: 0;
+        box-shadow: 0 0 0 3px #315ce81c;
+    }
+
+    #chat-send:disabled {
+        opacity: 0.6;
+        cursor: wait;
+    }
+
+    @media (max-width: 480px) {
+        #chat-launcher {
+            right: 14px;
+            bottom: 14px;
+        }
+
+        #chat-panel {
+            right: 12px;
+            bottom: 76px;
+            width: calc(100vw - 24px);
+            height: min(520px, calc(100dvh - 100px));
+        }
+    }
+</style>
+
+<button id="chat-launcher" type="button" aria-expanded="false"
+        aria-controls="chat-panel">
+    ✦ Ask ChurnGuard
+</button>
+
+<section id="chat-panel" role="dialog" aria-label="ChurnGuard Assistant">
+    <header class="chat-header">
+        <div>
+            <strong>ChurnGuard Assistant</strong>
+            <small>Ask about the form or model</small>
+        </div>
+        <button id="chat-close" type="button"
+                aria-label="Close chat">×</button>
+    </header>
+
+    <div id="chat-messages" aria-live="polite">
+        <div class="chat-message chat-bot">
+            Hi! I'm your ChurnGuard assistant. I can explain form fields,
+            model metrics, and customer churn. What would you like help with?
+        </div>
+    </div>
+
+    <div class="chat-shortcuts">
+        <button type="button" data-question="Explain the form fields to me.">
+            Explain form
+        </button>
+        <button type="button" data-question="How accurate is this model?">
+            Model accuracy
+        </button>
+        <button type="button" data-question="What does customer churn mean?">
+            What is churn?
+        </button>
+    </div>
+
+    <form id="chat-form">
+        <input id="chat-input" type="text" maxlength="2000"
+               placeholder="Ask a question..." autocomplete="off"
+               aria-label="Your question" required>
+        <button id="chat-send" type="submit">Send</button>
+    </form>
+</section>
+
+<script>
+(() => {
+    const launcher = document.getElementById("chat-launcher");
+    const panel = document.getElementById("chat-panel");
+    const closeButton = document.getElementById("chat-close");
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("chat-input");
+    const messages = document.getElementById("chat-messages");
+    const sendButton = document.getElementById("chat-send");
+
+    function toggleChat(open) {
+        panel.classList.toggle("open", open);
+        launcher.setAttribute("aria-expanded", String(open));
+
+        if (open) input.focus();
+    }
+
+    launcher.addEventListener("click", () => {
+        toggleChat(!panel.classList.contains("open"));
+    });
+
+    closeButton.addEventListener("click", () => toggleChat(false));
+
+    function addMessage(text, sender) {
+        const bubble = document.createElement("div");
+        bubble.className = "chat-message " +
+            (sender === "user" ? "chat-user" : "chat-bot");
+
+        // textContent prevents chatbot text from being interpreted as HTML
+        bubble.textContent = text;
+        messages.appendChild(bubble);
+        messages.scrollTop = messages.scrollHeight;
+        return bubble;
+    }
+
+    async function sendMessage(text) {
+        const question = text.trim();
+        if (!question || sendButton.disabled) return;
+
+        toggleChat(true);
+        addMessage(question, "user");
+        input.value = "";
+        sendButton.disabled = true;
+
+        const waiting = addMessage("Thinking...", "bot");
+
+        try {
+            const response = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: question })
+            });
+
+            const data = await response.json();
+            waiting.textContent = data.reply ||
+                "Sorry, I couldn't generate a response.";
+
+            if (!response.ok) {
+                waiting.textContent = data.reply ||
+                    "The assistant is temporarily unavailable.";
+            }
+        } catch (error) {
+            waiting.textContent =
+                "Couldn't connect to the assistant. Please try again.";
+        } finally {
+            sendButton.disabled = false;
+            messages.scrollTop = messages.scrollHeight;
+            input.focus();
+        }
+    }
+
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendMessage(input.value);
+    });
+
+    document.querySelectorAll("[data-question]").forEach((button) => {
+        button.addEventListener("click", () => {
+            sendMessage(button.dataset.question);
+        });
+    });
+})();
+</script>
